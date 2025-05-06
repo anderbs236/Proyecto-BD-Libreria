@@ -33,6 +33,7 @@ CREATE TABLE `AUTOR` (
 --
 
 /*!40000 ALTER TABLE `AUTOR` DISABLE KEYS */;
+
 CREATE TABLE `CLIENTE` (
   `ID_cliente` int NOT NULL,
   `Nombre` varchar(45) DEFAULT NULL,
@@ -49,20 +50,17 @@ CREATE TABLE `CLIENTE` (
 --
 
 /*!40000 ALTER TABLE `CLIENTE` DISABLE KEYS */;
+
 CREATE TABLE `DETALLE_VENTA` (
   `id_venta` int NOT NULL,
   `ISBN` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-  `Titulo` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-  `id_autor` int DEFAULT NULL,
   `cantidad` int DEFAULT NULL,
   `Precio_unitario` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-  `subtotal` decimal(10,2) DEFAULT NULL,
   PRIMARY KEY (`id_venta`,`ISBN`),
   KEY `fk_VENTA_has_GUION_LIBRO_VENTA1_idx` (`id_venta`),
   KEY `fk_libro_en_venta` (`ISBN`),
-  KEY `fk_detalle_libro` (`ISBN`,`Titulo`,`id_autor`),
-  CONSTRAINT `DETALLE_VENTA_LIBRO_EN_VENTA_FK` FOREIGN KEY (`ISBN`, `Titulo`, `id_autor`) REFERENCES `LIBRO_EN_VENTA` (`ISBN`, `Titulo`, `id_autor`),
-  CONSTRAINT `fk_detalle_venta_venta` FOREIGN KEY (`id_venta`) REFERENCES `VENTA` (`ID_venta`)
+  CONSTRAINT `fk_detalle_venta_venta` FOREIGN KEY (`id_venta`) REFERENCES `VENTA` (`ID_venta`),
+  CONSTRAINT `fk_detalleventa_libroenventa` FOREIGN KEY (`ISBN`) REFERENCES `LIBRO_EN_VENTA` (`ISBN`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -71,6 +69,7 @@ CREATE TABLE `DETALLE_VENTA` (
 --
 
 /*!40000 ALTER TABLE `DETALLE_VENTA` DISABLE KEYS */;
+
 CREATE TABLE `GENERO` (
   `ID_genero` int NOT NULL,
   `Genero` varchar(45) DEFAULT NULL,
@@ -83,6 +82,7 @@ CREATE TABLE `GENERO` (
 --
 
 /*!40000 ALTER TABLE `GENERO` DISABLE KEYS */;
+
 CREATE TABLE `GENERO_GUION` (
   `titulo` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `id_autor` int NOT NULL,
@@ -99,6 +99,7 @@ CREATE TABLE `GENERO_GUION` (
 --
 
 /*!40000 ALTER TABLE `GENERO_GUION` DISABLE KEYS */;
+
 CREATE TABLE `GUION_LIBRO` (
   `Titulo` varchar(255) NOT NULL,
   `id_autor` int NOT NULL,
@@ -114,6 +115,7 @@ CREATE TABLE `GUION_LIBRO` (
 --
 
 /*!40000 ALTER TABLE `GUION_LIBRO` DISABLE KEYS */;
+
 CREATE TABLE `LIBRO_EN_VENTA` (
   `ISBN` varchar(45) NOT NULL,
   `Titulo` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
@@ -122,7 +124,7 @@ CREATE TABLE `LIBRO_EN_VENTA` (
   `Stock` int DEFAULT NULL,
   `Fecha_publicacion` date DEFAULT NULL,
   `Precio_recomendado` decimal(10,2) DEFAULT NULL,
-  PRIMARY KEY (`ISBN`,`Titulo`,`id_autor`),
+  PRIMARY KEY (`ISBN`),
   KEY `fk_LIBRO_EN_VENTA_GUION_LIBRO1_idx` (`Titulo`,`id_autor`),
   CONSTRAINT `fk_LIBRO_EN_VENTA_GUION_LIBRO1` FOREIGN KEY (`Titulo`, `id_autor`) REFERENCES `GUION_LIBRO` (`Titulo`, `id_autor`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
@@ -133,6 +135,7 @@ CREATE TABLE `LIBRO_EN_VENTA` (
 --
 
 /*!40000 ALTER TABLE `LIBRO_EN_VENTA` DISABLE KEYS */;
+
 CREATE TABLE `VENTA` (
   `ID_venta` int NOT NULL,
   `Fecha_venta` date DEFAULT NULL,

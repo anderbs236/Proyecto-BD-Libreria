@@ -2,22 +2,23 @@
 -- CONSULTAS 
 -- Esta consulta nos muestra los libros que se han agotado
 select l.ISBN, l.Titulo , l.Stock
-from LIBRO_EN_VENTA l inner join DETALLE_VENTA dv 
+from LIBRO_EN_VENTA l inner join DETALLE_VENTA dv
 on l.ISBN = dv.ISBN
 group by l.ISBN, l.Titulo, l.Stock
 having l.Stock = 0;
 
 -- Esta consulta nos muestra los libros que mas se han vendido
-select dv.ISBN, dv.Titulo, sum(dv.cantidad) as total_vendido
-from DETALLE_VENTA dv 
-group by dv.ISBN, dv.Titulo
+select dv.ISBN, lev.Titulo, sum(dv.cantidad) as total_vendido
+from DETALLE_VENTA dv inner join LIBRO_EN_VENTA lev
+on dv.ISBN = lev.ISBN
+group by dv.ISBN, lev.Titulo
 order by total_vendido desc
 limit 5;
 
 --  Esta consulta nos muestra las fechas con mas ventas
 select v.Fecha_venta, count(*) as cantidad_ventas, sum(v.Precio_total) as ingreso_total
-from VENTA v 
-group by v.Fecha_venta 
+from VENTA v
+group by v.Fecha_venta
 order by ingreso_total desc;
 
 -- Esta consulta muestra los autores cuyos libros han generado más ingreso por ventas
@@ -25,7 +26,7 @@ select a.ID_autor, CONCAT_WS(' ', a.Nombre, a.Apellido1, a.Apellido2) as autor,
 sum(dv.cantidad * dv.Precio_unitario) as ingresos_totales
 from AUTOR a inner join LIBRO_EN_VENTA l
 on a.ID_autor = l.id_autor
-inner join DETALLE_VENTA dv 
+inner join DETALLE_VENTA dv
 on l.ISBN = dv.ISBN
 group by a.ID_autor, autor
 order by ingresos_totales desc;
@@ -33,22 +34,23 @@ order by ingresos_totales desc;
 -- Esta consulta nos muestra los clientes que mas han comprado
 select c.ID_cliente, CONCAT_WS(' ', c.Nombre, c.Apellido1, c.Apellido2 ) as cliente,
 sum(dv.cantidad) AS Libros_comprados
-from CLIENTE c inner join VENTA v 
+from CLIENTE c inner join VENTA v
 on c.ID_cliente = v.ID_cliente
-inner join DETALLE_VENTA dv 
+inner join DETALLE_VENTA dv
 on v.ID_venta = dv.id_venta
 group by c.ID_cliente, Cliente
 order by Libros_comprados desc;
 
-
 -- VISTAS
 -- Esta vista nos muestra los libros que mas se han vendido
 create view libros_mas_vendidos as
-select dv.ISBN, dv.Titulo, sum(dv.cantidad) as total_vendido
-from DETALLE_VENTA dv 
-group by dv.ISBN, dv.Titulo 
+select dv.ISBN, lev.Titulo, sum(dv.cantidad) as total_vendido
+from DETALLE_VENTA dv inner join LIBRO_EN_VENTA lev
+on dv.ISBN = lev.ISBN
+group by dv.ISBN, lev.Titulo
 order by total_vendido desc;
 
+-- Ejecutar
 select * from libros_mas_vendidos limit 5;
 
 
@@ -56,15 +58,15 @@ select * from libros_mas_vendidos limit 5;
 create view autores_top_ingresos as
 select a.ID_autor, CONCAT_WS(' ', a.Nombre, a.Apellido1, a.Apellido2) AS autor,
 sum(dv.cantidad * dv.Precio_unitario) AS ingresos_totales
-from AUTOR a inner join LIBRO_EN_VENTA l 
+from AUTOR a inner join LIBRO_EN_VENTA l
 on a.ID_autor = l.id_autor
-inner join DETALLE_VENTA dv 
+inner join DETALLE_VENTA dv
 on l.ISBN = dv.ISBN
 group by a.ID_autor, autor
 order by ingresos_totales desc;
 
+-- Ejecutar
 select * from autores_top_ingresos;
-
 
 -- Funciones
 -- Esta función calcula el stock de un libro 
@@ -74,10 +76,9 @@ returns int
 deterministic
 begin
 	declare stock_actual int;
-
 	select l.Stock into stock_actual
 	from LIBRO_EN_VENTA l
-	where l.ISBN = isbn_input; 
+	where l.ISBN = isbn_input;
 	
 	return ifnull(stock_actual, 0);
 end //
@@ -94,9 +95,8 @@ returns varchar(255)
 deterministic
 begin
 	declare nombre_completo varchar(255);
-
 	select CONCAT_WS(' ', c.Nombre, c.Apellido1, c.Apellido2) into nombre_completo
-	from CLIENTE c 
+	from CLIENTE c
 	where c.ID_cliente = cliente_id;
 	
 	return nombre_completo;
@@ -126,10 +126,9 @@ end //
 delimiter ;
 
 -- Ejecutar
-insert into GUION_LIBRO (Titulo, id_autor, sinopsis)
-values ('Un verano en el campamento', 2, '"Un verano en el campamento" cuenta las aventuras de jóvenes en un campamento donde hacen amistades, superan desafíos y aprenden sobre sí mismos, convirtiendo su verano en una experiencia inolvidable.');
-
+-- Primero añadir el libro en guion_libro
 call agregar_libro('9788427053083', 'Un verano en el campamento', 2, 'Siruela', 50, '2024-08-04', 20.00);
+
 
 select *
 from LIBRO_EN_VENTA l
@@ -142,9 +141,9 @@ create procedure actualizar_stock (
 	in p_isbn varchar(20),
 	in p_nuevo_stock int
 )
-begin 
-	update LIBRO_EN_VENTA l 
-	set Stock = p_nuevo_stock 
+begin
+	update LIBRO_EN_VENTA l
+	set Stock = p_nuevo_stock
 	where l.ISBN = p_isbn;
 end //
 delimiter ;
@@ -159,14 +158,17 @@ where l.ISBN = '000080142-9';
 
 -- Este procedimiento es para mostrar todos los detalles de una venta por id
 delimiter //
-create procedure detalle_venta (
-	in p_id_venta int
-)
+create procedure detalle_venta (in p_id_venta INT)
 begin
-	select dv.id_venta , dv.ISBN, dv.Titulo , CONCAT_WS(' ', a.Nombre, a.Apellido1, a.Apellido2) as autor,
-	dv.cantidad, dv.Precio_unitario, dv.subtotal
-	from DETALLE_VENTA dv inner join AUTOR a 
-	on dv.id_autor = a.ID_autor
+	select dv.id_venta , dv.ISBN , lev.Titulo , concat_ws(' ', a.Nombre,
+	a.Apellido1, a.Apellido2) as autor, dv.cantidad , dv.Precio_unitario ,
+	v.Precio_total as subtotal
+	from DETALLE_VENTA dv inner join LIBRO_EN_VENTA lev
+	on dv.ISBN = lev.ISBN
+	inner join AUTOR a
+	on lev.id_autor = a.ID_autor
+	inner join VENTA v
+	on dv.id_venta = v.ID_venta
 	where dv.id_venta = p_id_venta;
 end //
 delimiter ;
@@ -178,44 +180,55 @@ call detalle_venta(100);
 -- TRIGGERS
 -- Trigger para actualizar el subtotal en DETALLE_VENTA
 delimiter //
-create trigger actualizar_subtotal
-before insert on DETALLE_VENTA
+create trigger actualizar_precioTotal_insert
+after insert on DETALLE_VENTA	
 for each row
 begin
-	set new.subtotal = new.cantidad * new.precio_unitario;
+	declare total decimal(10,2);
+	select sum(cantidad * precio_unitario) into total
+	from DETALLE_VENTA
+	where id_venta = new.id_venta;
+	update VENTA
+	set Precio_total = total
+	where ID_venta = new.id_venta;
 end //
 delimiter ;
 
 -- Ejecutar
-insert into DETALLE_VENTA (id_venta, isbn, titulo, id_autor, cantidad, precio_unitario)
-values (499, '000080142-9', 'Three on a Weekend',  '412', 2, 20);
+insert into DETALLE_VENTA (id_venta, ISBN, cantidad, Precio_unitario)
+values (1, '000080142-9', 1, 30.00);
 
 
 -- Para cuando se actualice
 delimiter //
-create trigger actualizar_subtotal_update
-before update on DETALLE_VENTA
+create trigger actualizar_precioTotal_update
+after update on DETALLE_VENTA
 for each row
 begin
-	set new.subtotal = new.cantidad * new.precio_unitario;
+	declare total decimal(10,2);
+	select sum(cantidad * precio_unitario) into total
+	from DETALLE_VENTA
+	where id_venta = new.id_venta;
+	update VENTA
+	set Precio_total = total
+	where ID_venta = new.id_venta;
 end //
 delimiter ;
 
 -- Ejecutar
-update DETALLE_VENTA dv 
-SET cantidad = 48
-where dv.id_venta = 20;
+update DETALLE_VENTA set cantidad = 2
+where id_venta = 1 and ISBN = '014223511-3';
 
 -- Evitar que se venda mas stock del disponible
+delimiter //
 delimiter //
 create trigger verificar_stock
 before insert on DETALLE_VENTA
 for each row
 begin
 	declare stock_disponible int;
-
 	select Stock into stock_disponible
-	from LIBRO_EN_VENTA 
+	from LIBRO_EN_VENTA
 	where ISBN = new.ISBN;
 	
 	if stock_disponible is null then
@@ -229,9 +242,12 @@ end //
 delimiter ;
 
 -- Ejecutar
-insert into DETALLE_VENTA (id_venta,ISBN, Titulo,id_autor, cantidad, Precio_unitario)
-values (502, '050013048-0', 'Mummies: Secrets of the Pharaohs (a.k.a. Mummies 3D)', 1, 100, 20.00);
-
+-- Opción 1
+insert into DETALLE_VENTA (id_venta,ISBN, cantidad, Precio_unitario)
+values (502, '050013048-0', 100, 20.00);
+-- Opción 2
+insert into DETALLE_VENTA (id_venta,ISBN,cantidad, Precio_unitario)
+values (502, '050913048-8', 100, 20.00);
 
 -- actualizar el stock automaticamente al vender
 delimiter //
@@ -246,5 +262,5 @@ end //
 delimiter ;
 
 -- Ejecutar
-insert into DETALLE_VENTA (id_venta,ISBN, Titulo,id_autor, cantidad, Precio_unitario)
-values (500, '050913048-8', 'Mummies: Secrets of the Pharaohs (a.k.a. Mummies 3D)', 1, 2, 20.00);
+insert into DETALLE_VENTA (id_venta,ISBN,cantidad, Precio_unitario)
+values (500, '000403210-1',3, 20.00);

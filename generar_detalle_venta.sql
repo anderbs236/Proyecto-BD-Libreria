@@ -1,9 +1,9 @@
--- ✅ BLOQUE 1: Crear tabla temporal de cantidades (1 y 2)
+-- Crear tabla temporal de cantidades (1 y 2)
 DROP TEMPORARY TABLE IF EXISTS TEMP_CANTIDADES;
 CREATE TEMPORARY TABLE TEMP_CANTIDADES (cantidad INT);
 INSERT INTO TEMP_CANTIDADES VALUES (1), (2);
 
--- ✅ BLOQUE 2: Crear tabla temporal con las 500 primeras ventas
+-- Crear tabla temporal con las 500 primeras ventas
 DROP TEMPORARY TABLE IF EXISTS TEMP_ID_VENTA;
 CREATE TEMPORARY TABLE TEMP_ID_VENTA AS
 SELECT id_venta, precio_total
@@ -11,7 +11,7 @@ FROM VENTA
 ORDER BY id_venta
 LIMIT 500;
 
--- ✅ BLOQUE 3: Crear tabla temporal TEMP_DETALLE_VENTA
+--  Crear tabla temporal TEMP_DETALLE_VENTA
 -- Se selecciona SOLO UNA combinación válida por venta
 -- para que no se repita ningún id_venta y el subtotal coincida
 DROP TEMPORARY TABLE IF EXISTS TEMP_DETALLE_VENTA;
@@ -37,14 +37,14 @@ FROM (
 ) AS combinaciones_validas
 WHERE fila = 1;
 
--- ✅ BLOQUE 4: Limpiar e insertar en la tabla real DETALLE_VENTA
+-- Limpiar e insertar en la tabla real DETALLE_VENTA
 DELETE FROM DETALLE_VENTA;
 
 INSERT INTO DETALLE_VENTA (id_venta, isbn, cantidad, precio_unitario, subtotal)
 SELECT id_venta, isbn, cantidad, precio_unitario, subtotal
 FROM TEMP_DETALLE_VENTA;
 
--- ✅ BLOQUE 5: Verificar que se insertaron correctamente
+-- Verificar que se insertaron correctamente
 -- Debe devolver 500 filas, todas con id_venta diferente
 SELECT COUNT(*) AS total_filas,
        COUNT(DISTINCT id_venta) AS ventas_distintas,
